@@ -176,6 +176,28 @@ export function clearSources() {
   sources.length = 0;
 }
 
+// Raising or lowering the ambient temperature is a shift of the whole
+// domain's baseline, not a redefinition of what "ambient" means against an
+// unchanged field -- so the entire grid and every existing source's absolute
+// temperature move by the same delta, keeping how far above/below ambient
+// everything sits (and therefore its color and buoyancy) unchanged. Without
+// this, cells sitting at the *old* ambient would suddenly read as colder
+// than a *raised* new ambient (and hotter than a lowered one) -- buoyancy
+// and the heatmap would invert for air that never actually changed
+// temperature, just because the baseline it's compared against moved.
+export function setAmbientTemperature(newAmbientTemperature) {
+  const delta = newAmbientTemperature - config.ambientTemperature;
+  config.ambientTemperature = newAmbientTemperature;
+  if (delta === 0) return;
+
+  for (let i = 0; i < grid.t.length; i++) {
+    grid.t[i] += delta;
+  }
+  for (const source of sources) {
+    source.temperature += delta;
+  }
+}
+
 export function reset() {
   sources.length = 0;
   walls.length = 0;

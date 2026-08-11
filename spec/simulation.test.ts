@@ -184,6 +184,32 @@ describe("source/wall CRUD in meters", () => {
   });
 });
 
+describe("setAmbientTemperature", () => {
+  it("shifts the whole field and existing sources by the delta, leaving relative temperatures unchanged", () => {
+    const { grid } = simulation;
+    const idx = grid.nx + 3;
+    grid.t[idx] = config.ambientTemperature; // sitting at the old ambient, i.e. thermally neutral
+    const source = addSource(0.1, 0.2, config.ambientTemperature + 30);
+
+    simulation.setAmbientTemperature(config.ambientTemperature + 15);
+
+    expect(config.ambientTemperature).toBe(35);
+    // Still exactly at the (new) ambient -- raising ambient must not make
+    // untouched air read as colder than the new baseline.
+    expect(grid.t[idx]).toBeCloseTo(35, 10);
+    // Still 30 degrees above the (new) ambient, exactly as before the shift.
+    expect(source.temperature).toBeCloseTo(65, 10);
+  });
+
+  it("is a no-op when the value doesn't actually change", () => {
+    const { grid } = simulation;
+    const idx = grid.nx + 3;
+    grid.t[idx] = 27;
+    simulation.setAmbientTemperature(config.ambientTemperature);
+    expect(grid.t[idx]).toBe(27);
+  });
+});
+
 describe("temperatureToColor", () => {
   it("is neutral white at ambient, warms toward red above it, cools toward blue below it", () => {
     expect(simulation.temperatureToColor(20, 20)).toEqual([255, 255, 255]);
