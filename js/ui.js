@@ -153,7 +153,7 @@ export function mountControls(panel) {
     '<p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tuning</p>' +
     slider({
       id: "source-temperature",
-      label: "Source Temperature (Δ from ambient)",
+      label: "Source Power (Δ from ambient)",
       min: 5,
       max: 60,
       value: state.temperatureDelta,
