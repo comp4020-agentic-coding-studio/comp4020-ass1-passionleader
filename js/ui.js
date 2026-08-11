@@ -17,7 +17,6 @@ import {
   PRESETS,
   rayleighNumber,
   reset,
-  setAmbientTemperature,
   sourceAt,
   sources,
 } from "./simulation.js";
@@ -255,7 +254,7 @@ export function mountControls(panel) {
     }
   });
   bindSlider(panel, "ambient-temperature", (value) => {
-    setAmbientTemperature(value);
+    config.ambientTemperature = value;
   });
   bindSlider(panel, "eddy-viscosity", (value) => {
     config.eddyViscosityMultiplier = value;
