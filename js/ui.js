@@ -197,7 +197,8 @@ export function mountControls(panel) {
     </button>
   `;
 
-  // Anything that isn't sim tooling: the explainer page and a support link.
+  // Anything that isn't sim tooling: the explainer page and a support link
+  // (also injected as a floating widget by the BMC script in index.html).
   // Kept in its own bottom-of-panel group, visually distinct from the
   // Control actions above it so it doesn't read as another sim action.
   const etcSection = document.createElement("div");
@@ -207,7 +208,7 @@ export function mountControls(panel) {
     <a href="./physics.html" class="flex min-h-11 items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500">
       How this works
     </a>
-    <button type="button" id="buy-me-a-coffee-button" class="flex min-h-11 items-center justify-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-yellow-400">
+    <a href="https://www.buymeacoffee.com/sskim" target="_blank" rel="noopener" id="buy-me-a-coffee-button" class="flex min-h-11 items-center justify-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-yellow-400">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
         <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
         <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
@@ -216,7 +217,7 @@ export function mountControls(panel) {
         <line x1="14" y1="2" x2="14" y2="4" />
       </svg>
       Buy Me a Coffee
-    </button>
+    </a>
   `;
 
   panel.replaceChildren(toolGroup, slidersSection, presetsSection, actionsSection, etcSection);
