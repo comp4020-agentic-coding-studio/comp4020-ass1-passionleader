@@ -183,8 +183,9 @@ export function mountControls(panel) {
   presetButtons.forEach((button) => presetsSection.appendChild(button));
 
   const actionsSection = document.createElement("div");
-  actionsSection.className = "mt-auto flex flex-col gap-2 border-t border-[#3a2a20] pt-4";
+  actionsSection.className = "flex flex-col gap-2 border-t border-[#3a2a20] pt-4";
   actionsSection.innerHTML = `
+    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Control</p>
     <button type="button" id="play-pause-button" aria-pressed="${state.playing}" class="${actionButtonClass()}">
       Pause
     </button>
@@ -196,7 +197,29 @@ export function mountControls(panel) {
     </button>
   `;
 
-  panel.replaceChildren(toolGroup, slidersSection, presetsSection, actionsSection);
+  // Anything that isn't sim tooling: the explainer page and a support link.
+  // Kept in its own bottom-of-panel group, visually distinct from the
+  // Control actions above it so it doesn't read as another sim action.
+  const etcSection = document.createElement("div");
+  etcSection.className = "mt-auto flex flex-col gap-2 border-t border-[#3a2a20] pt-4";
+  etcSection.innerHTML = `
+    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Etc</p>
+    <a href="./physics.html" class="flex min-h-11 items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500">
+      How this works
+    </a>
+    <button type="button" id="buy-me-a-coffee-button" class="flex min-h-11 items-center justify-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-yellow-400">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
+        <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+        <line x1="6" y1="2" x2="6" y2="4" />
+        <line x1="10" y1="2" x2="10" y2="4" />
+        <line x1="14" y1="2" x2="14" y2="4" />
+      </svg>
+      Buy Me a Coffee
+    </button>
+  `;
+
+  panel.replaceChildren(toolGroup, slidersSection, presetsSection, actionsSection, etcSection);
 
   toolButtons.forEach((button) => {
     button.addEventListener("click", () => {
