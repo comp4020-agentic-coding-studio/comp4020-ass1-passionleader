@@ -1,9 +1,20 @@
-# COMP4020 prototype
+# Thermal Convection & Airflow Simulator (COMP4020 Assignment 1)
 
-This is your starter repo for a COMP4020 prototype: a static site written in
-HTML/CSS/TypeScript that builds to plain HTML/CSS/JS and deploys to GitHub
-Pages. The **deployed site is what gets marked** --- not this repo, and not "it
-works on my machine". It's marked live in Chrome against the deployed URL at two
+An interactive explainer for thermal convection: place heat/cold sources, draw
+wall obstacles, adjust temperatures with sliders, and watch airflow particles
+and a thermal color map respond in real time. One idea, tightly scoped ---
+convection, not a general fluid sandbox.
+
+**Stack: pure vanilla JavaScript, HTML5 Canvas 2D, and Tailwind CSS via CDN.**
+No framework, no runtime npm dependencies, no bundling the shipped app depends
+on --- what ships is `index.html` plus three plain ES module files under `js/`.
+Vite is still present in this repo (see "The stack is swappable" below), but
+only as the course's static-build/dev-server pipeline, the same one every
+deliverable uses --- it is not a dependency of the app itself, and nothing here
+requires it to run. Opening `index.html` directly in a browser works.
+
+The **deployed site is what gets marked** --- not this repo, and not "it works
+on my machine". It's marked live in Chrome against the deployed URL at two
 viewports --- 1920×1080 (desktop) and 390×844 (phone) --- and both count in
 full, so make that artefact good at both and use the checks below to know
 whether it is.
@@ -14,6 +25,71 @@ and this repo's name tells you which deliverable it is. Run the course plugin's
 course API, carries your harness forward from last week, and helps you turn the
 spec's checkable lines into tests of your own. Read the spec before you build,
 and see `spec/README.md` for how the checks in this repo relate to it.
+
+## Architecture
+
+Three modules, one direction of dependency: `app.js` depends on both
+`simulation.js` and `ui.js`; `ui.js` depends on `simulation.js`;
+`simulation.js` depends on nothing. Don't add an import that points the other
+way --- it's the thing that keeps any one file replaceable without a rewrite of
+the others.
+
+- **`js/simulation.js`** --- state and physics only: heat/cold `sources`,
+  `walls`, the `particles` field, and `step(dt)`. No DOM, no Canvas API, no
+  `document`/`window` reference. This is what makes the physics testable
+  headlessly (`spec/*.test.ts`) without a browser.
+- **`js/ui.js`** --- owns the `#controls` panel: renders its markup, binds its
+  inputs, and translates them into calls against `simulation.js` (add a
+  source, change the active tool). Never touches the canvas or calls
+  `ctx.*` directly.
+- **`js/app.js`** --- the entry point. Owns `#simulation-canvas`, the
+  `requestAnimationFrame` loop, resize handling, and translating raw pointer
+  events into canvas-space coordinates before handing them to `ui.js`. No
+  physics and no control markup live here --- if you're tempted to compute a
+  velocity or build a `<label>` in this file, it belongs in one of the other
+  two.
+- **`index.html`** --- structure only: the canvas element, the empty
+  `#controls` container `ui.js` fills in, and the Tailwind CDN `<script>` tag.
+  Styling is Tailwind utility classes in the markup; reach for a `<style>`
+  block only for something Tailwind's utilities genuinely can't express, and
+  keep it inline and small rather than reintroducing a separate stylesheet.
+
+## Coding standards
+
+- **ES modules, no bundler-dependent syntax.** `import`/`export` between the
+  three `js/` files is fine (Vite serves them natively and the build step
+  handles it), but don't reach for anything that only works because a bundler
+  is present --- no dynamic `import()` for code-splitting, no npm package
+  imports. If it wouldn't run from a plain `<script type="module">` off a
+  static file server, it doesn't belong here.
+- **No TypeScript in the app code.** `main.ts` was deleted along with the
+  template's TypeScript setup --- `js/*.js` is the app, plain and untyped.
+  `tsc --noEmit` still runs (see the checks below) but it only has `spec/*.ts`
+  to check now; that's expected, not a gap to fill by adding types back.
+- **Canvas conventions.** All drawing happens inside `render()` in `app.js`,
+  once per frame, driven purely by `simulation.js` state --- no code outside
+  `render()` calls a `ctx.*` method. Coordinates passed into `simulation.js`
+  are always canvas-space (post `getBoundingClientRect()` offset), never raw
+  `clientX`/`clientY`.
+- **Tailwind utility classes over custom CSS.** Reach for a utility class
+  first; a `<style>` block is the exception, not the default.
+- **Name things after the simulation's own vocabulary** (`source`, `wall`,
+  `particle`, `temperature`), not generic UI terms (`item`, `data`, `thing`)
+  --- the domain should be legible from the code without cross-referencing the
+  spec.
+
+## Commit rules
+
+- **Commit at the boundary of a working change**, not at the end of a session
+  --- a source you can place and see rendered, a slider that visibly changes
+  behavior, a wall that particles now deflect off. Each commit should leave
+  `pnpm check` green (see below); if you must commit mid-feature, say so in the
+  message rather than leaving it implicit.
+- **Prefix commits with the module they change** when it's not obvious from the
+  message alone (`sim:`, `ui:`, `app:`), so the log itself documents the
+  boundary the architecture above draws.
+- **Cite commits from `PROCESS.md`** as you go, not retroactively at the end
+  --- see "Your process is part of the mark" below.
 
 ## How to work in here
 
@@ -65,8 +141,9 @@ running counts as not green, so ship with time for CI to finish.
   website, whatever the week's brief asks; the tests you write for the week's
   own spec run alongside it (any `spec/*.test.ts`). A failure names the contract
   you haven't met yet.
-- **lint** --- `stylelint` for CSS, `oxlint` for TypeScript. Flags code that's
-  wrong, fragile, or non-idiomatic. Read the rule it names.
+- **lint** --- `stylelint` for CSS, `oxlint` for JavaScript/TypeScript (it
+  covers `js/*.js` as well as `spec/*.ts`). Flags code that's wrong, fragile,
+  or non-idiomatic. Read the rule it names.
 - **tests** --- any other tests you write, wherever you put them (co-located
   with your source is fine, not just `spec/`), must pass. Vitest picks up both
   this and the spec suite in one `vitest run`, the last step of `pnpm check`. A
@@ -97,11 +174,12 @@ CI machine, not proof the site is fast for real users.
 
 ## The stack is swappable
 
-Out of the box this is plain HTML/CSS/TypeScript on Vite, and every `.html` file
-in the repo is a page: add pages, link them, and the build picks them up with no
-config. That's a default, not a rule (unless the week's spec says otherwise).
-You can swap in Astro or any other static generator, because nothing in CI names
-a tool --- the whole contract is:
+The template ships plain HTML/CSS/TypeScript on Vite; this repo has swapped
+that for vanilla JS/Canvas/Tailwind CDN (see the top of this file and
+"Architecture" above) and kept Vite only as the build/dev pipeline, not as an
+app dependency. Every `.html` file in the repo is still a page: add pages, link
+them, and the build picks them up with no config. Nothing in CI names a tool
+--- the whole contract is:
 
 - `pnpm build` emits the complete site into `dist/`
 - the `package.json` scripts (`check`, `check:evidence`, `build`) keep working
