@@ -2,9 +2,24 @@
 // tuning sliders, the action buttons, the status bar readout, and the
 // drawer/sidebar's own open/closed visibility. Reads and writes
 // simulation.js state in response to input; never touches the canvas or
-// calls a `ctx.*` method — app.js owns rendering.
+// calls a `ctx.*` method — app.js owns rendering, and hands this module
+// coordinates already converted to meters.
 
-import { addSource, applyPreset, clearSources, config, eraseAt, PRESETS, reset, sourceAt, sources } from "./simulation.js";
+import {
+  addSource,
+  applyPreset,
+  CELL_SIZE_M,
+  clearSources,
+  config,
+  eraseAt,
+  flowRegime,
+  grid,
+  PRESETS,
+  rayleighNumber,
+  reset,
+  sourceAt,
+  sources,
+} from "./simulation.js";
 
 export const TOOLS = [
   { id: "heat", label: "Heat Source" },
@@ -15,7 +30,7 @@ export const TOOLS = [
 
 export const state = {
   tool: "heat",
-  temperature: 20, // source temperature intensity magnitude, 0..30 — sign comes from the heat/cold tool
+  temperatureDelta: 25, // source temperature offset from ambient, °C — sign comes from the heat/cold tool
   playing: true,
   controlsOpen: true,
   selectedSource: null, // the source the temperature slider edits live, if any
@@ -101,14 +116,14 @@ function actionButtonClass() {
   return "flex min-h-11 items-center justify-center rounded bg-[#241a15] px-3 py-1.5 text-sm font-medium hover:bg-[#2f2119]";
 }
 
-function slider({ id, label, min, max, value, unit = "" }) {
+function slider({ id, label, min, max, step: stepSize = 1, value, unit = "" }) {
   return `
     <label class="flex flex-col gap-1 text-sm" for="${id}">
       <span class="flex justify-between text-slate-300">
         <span>${label}</span>
         <span id="${id}-value" class="font-mono text-slate-400">${value}${unit}</span>
       </span>
-      <input type="range" id="${id}" min="${min}" max="${max}" value="${value}" class="accent-sky-600" />
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${stepSize}" value="${value}" class="accent-sky-600" />
     </label>
   `;
 }
@@ -122,11 +137,7 @@ function presetButton(preset) {
   return button;
 }
 
-// `getBounds` is called lazily (only when a preset button is clicked), not
-// stored eagerly — the canvas's real size isn't known until app.js has laid
-// it out, and presets are placed proportional to that size (see
-// applyPreset in simulation.js).
-export function mountControls(panel, getBounds) {
+export function mountControls(panel) {
   const toolGroup = document.createElement("fieldset");
   toolGroup.className = "flex flex-col gap-2";
   toolGroup.innerHTML =
@@ -138,10 +149,31 @@ export function mountControls(panel, getBounds) {
   slidersSection.className = "flex flex-col gap-3 border-t border-[#3a2a20] pt-4";
   slidersSection.innerHTML =
     '<p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tuning</p>' +
-    slider({ id: "temperature", label: "Source Temperature Intensity", min: 0, max: 30, value: state.temperature }) +
-    slider({ id: "room-temperature", label: "Room Temperature", min: -60, max: 60, value: config.roomTemperature }) +
-    slider({ id: "particle-count", label: "Particle Count", min: 0, max: 1000, value: config.particleCount }) +
-    slider({ id: "viscosity", label: "Air Resistance / Viscosity", min: 0, max: 100, value: config.viscosity });
+    slider({
+      id: "source-temperature",
+      label: "Source Temperature (Δ from ambient)",
+      min: 5,
+      max: 60,
+      value: state.temperatureDelta,
+      unit: "°C",
+    }) +
+    slider({
+      id: "ambient-temperature",
+      label: "Ambient Temperature",
+      min: -10,
+      max: 40,
+      value: config.ambientTemperature,
+      unit: "°C",
+    }) +
+    slider({
+      id: "eddy-viscosity",
+      label: "Eddy Viscosity ×",
+      min: 50,
+      max: 800,
+      step: 10,
+      value: config.eddyViscosityMultiplier,
+    }) +
+    slider({ id: "tracer-count", label: "Tracer Count", min: 0, max: 1000, step: 25, value: config.tracerCount });
 
   const presetsSection = document.createElement("div");
   presetsSection.className = "flex flex-col gap-2 border-t border-[#3a2a20] pt-4";
@@ -183,30 +215,28 @@ export function mountControls(panel, getBounds) {
   presetButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.selectedSource = null;
-      applyPreset(button.dataset.preset, getBounds());
-      syncSliderDisplay(panel, "particle-count", config.particleCount);
-      syncSliderDisplay(panel, "viscosity", config.viscosity);
-      syncSliderDisplay(panel, "room-temperature", config.roomTemperature);
+      applyPreset(button.dataset.preset);
+      syncSliderDisplay(panel, "eddy-viscosity", config.eddyViscosityMultiplier);
     });
   });
 
-  bindSlider(panel, "temperature", (value) => {
-    state.temperature = value;
+  bindSlider(panel, "source-temperature", (value) => {
+    state.temperatureDelta = value;
     // Live-editing: if a source is currently selected, the slider adjusts
     // its actual temperature immediately rather than only affecting sources
     // placed from now on.
     if (state.selectedSource) {
-      state.selectedSource.temperature = state.selectedSourceSign * value;
+      state.selectedSource.temperature = config.ambientTemperature + state.selectedSourceSign * value;
     }
   });
-  bindSlider(panel, "room-temperature", (value) => {
-    config.roomTemperature = value;
+  bindSlider(panel, "ambient-temperature", (value) => {
+    config.ambientTemperature = value;
   });
-  bindSlider(panel, "particle-count", (value) => {
-    config.particleCount = value;
+  bindSlider(panel, "eddy-viscosity", (value) => {
+    config.eddyViscosityMultiplier = value;
   });
-  bindSlider(panel, "viscosity", (value) => {
-    config.viscosity = value;
+  bindSlider(panel, "tracer-count", (value) => {
+    config.tracerCount = value;
   });
 
   const playPauseButton = panel.querySelector("#play-pause-button");
@@ -228,8 +258,7 @@ export function mountControls(panel, getBounds) {
 }
 
 // Updates a slider's thumb position and readout text to match a value set
-// programmatically (by a preset, or by app.js's resize-driven particle-count
-// rescaling) rather than by the user dragging it.
+// programmatically (by a preset) rather than by the user dragging it.
 export function syncSliderDisplay(panel, id, value) {
   const input = panel.querySelector(`#${id}`);
   const readout = panel.querySelector(`#${id}-value`);
@@ -247,9 +276,10 @@ function bindSlider(panel, id, onChange) {
   });
 }
 
-// Dispatches a canvas point-interaction to the currently selected tool.
-// Wall drawing needs drag state, so app.js handles that gesture itself and
-// calls `addWall` directly rather than going through here.
+// Dispatches a canvas point-interaction (already converted to meters by
+// app.js) to the currently selected tool. Wall drawing needs drag state, so
+// app.js handles that gesture itself and calls `addWall` directly rather
+// than going through here.
 //
 // Returns true when the point landed on an *existing* source (it was
 // selected for live editing rather than a new one being created) — app.js
@@ -261,10 +291,10 @@ export function handleCanvasPointer(x, y) {
     const existing = sourceAt(x, y);
     if (existing) {
       state.selectedSource = existing;
-      state.selectedSourceSign = existing.temperature >= 0 ? 1 : -1;
+      state.selectedSourceSign = existing.temperature >= config.ambientTemperature ? 1 : -1;
       return true;
     }
-    state.selectedSource = addSource(x, y, sign * state.temperature);
+    state.selectedSource = addSource(x, y, config.ambientTemperature + sign * state.temperatureDelta);
     state.selectedSourceSign = sign;
     return false;
   }
@@ -280,14 +310,37 @@ export function handleCanvasPointer(x, y) {
 }
 
 let fpsEl;
-let particleCountEl;
+let tracerCountEl;
+let rayleighEl;
+let flowRegimeEl;
 
 export function mountStatusBar(root) {
   fpsEl = root.querySelector("#fps-value");
-  particleCountEl = root.querySelector("#particle-count-value");
+  tracerCountEl = root.querySelector("#tracer-count-value");
+  rayleighEl = root.querySelector("#rayleigh-value");
+  flowRegimeEl = root.querySelector("#flow-regime-value");
 }
 
-export function updateStatus({ fps, particleCount }) {
+// The Rayleigh number driving the readout uses the domain's own height as
+// its length scale and the hottest/coldest source's deviation from ambient
+// as its deltaT — with real, unscaled air properties (rayleighNumber's
+// defaults), so this answers "would this actually convect if it were real
+// air", independent of the coarse grid's own numerically-stabilized
+// diffusion. Falls back to the source-temperature slider's value when no
+// source has been placed yet, so the readout is never just "--".
+function currentRayleighNumber() {
+  const deltaT = sources.length
+    ? Math.max(...sources.map((source) => Math.abs(source.temperature - config.ambientTemperature)))
+    : state.temperatureDelta;
+  const lengthM = grid.ny * CELL_SIZE_M;
+  return rayleighNumber(deltaT, lengthM);
+}
+
+export function updateStatus({ fps, tracerCount }) {
   fpsEl.textContent = String(Math.round(fps));
-  particleCountEl.textContent = String(particleCount);
+  tracerCountEl.textContent = String(tracerCount);
+
+  const ra = currentRayleighNumber();
+  rayleighEl.textContent = ra.toExponential(1);
+  flowRegimeEl.textContent = flowRegime(ra);
 }
