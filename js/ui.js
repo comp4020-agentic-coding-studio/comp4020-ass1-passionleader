@@ -7,6 +7,8 @@
 
 import {
   addSource,
+  AMBIENT_TEMPERATURE_MAX,
+  AMBIENT_TEMPERATURE_MIN,
   applyPreset,
   CELL_SIZE_M,
   clearSources,
@@ -160,8 +162,8 @@ export function mountControls(panel) {
     slider({
       id: "ambient-temperature",
       label: "Ambient Temperature",
-      min: -10,
-      max: 40,
+      min: AMBIENT_TEMPERATURE_MIN,
+      max: AMBIENT_TEMPERATURE_MAX,
       value: config.ambientTemperature,
       unit: "°C",
     }) +

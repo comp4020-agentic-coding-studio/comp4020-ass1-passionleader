@@ -79,6 +79,14 @@ const SOURCE_INFLUENCE_MULTIPLIER = 2.2; // how far past its drawn radius a sour
 const HEAT_INJECTION_RATE = 4; // how fast a grid cell picks up a nearby source's temperature
 const COLOR_RANGE_C = 35; // +/- this many degrees from ambient maps to full red/blue
 
+// The Ambient Temperature slider's own range (ui.js's slider bounds mirror
+// these) -- also doubles as the scale temperatureToColor tints an
+// ambient-only room by, so dragging the slider all the way to
+// AMBIENT_TEMPERATURE_MIN visibly turns the whole room blue and all the way
+// to AMBIENT_TEMPERATURE_MAX turns it red, even with no sources placed.
+export const AMBIENT_TEMPERATURE_MIN = -10;
+export const AMBIENT_TEMPERATURE_MAX = 40;
+
 function createGrid(nx, ny, ambientTemperature) {
   const grid = {
     nx,
@@ -317,6 +325,27 @@ function addSourcesHeat(dt) {
   }
 }
 
+// Every cell drifts back toward the current ambient temperature, same shape
+// as addSourcesHeat's forcing but uniform and much weaker -- this is what
+// makes the Ambient Temperature slider visibly recolor a room with no
+// sources in it (see temperatureToColor's ambient base tint) instead of
+// leaving empty air stuck at whatever absolute number it already held.
+// Weak enough that an active source's own HEAT_INJECTION_RATE still wins
+// near itself.
+const AMBIENT_RELAXATION_RATE = 1.2;
+
+function addAmbientRelaxation(dt) {
+  const { nx, ny, t, solid } = grid;
+  const ambient = config.ambientTemperature;
+  for (let j = 1; j <= ny; j++) {
+    for (let i = 1; i <= nx; i++) {
+      const idx = index(nx, i, j);
+      if (solid[idx]) continue;
+      t[idx] += (ambient - t[idx]) * AMBIENT_RELAXATION_RATE * dt;
+    }
+  }
+}
+
 // Advances the simulation by `dt` seconds: a real (if coarse) incompressible
 // Navier-Stokes step under the Boussinesq approximation. See fluid-grid.js
 // for what each kernel does; this is Stam's Stable Fluids ordering — add
@@ -351,6 +380,7 @@ export function step(dt) {
   advect(nx, ny, t, t0, u, v, dt, h, solid, "scalar");
 
   addSourcesHeat(dt);
+  addAmbientRelaxation(dt);
 }
 
 // Samples the solved velocity field at a physical (x, y) in meters — the only
@@ -414,16 +444,40 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-// Blue = colder than ambient, white = ambient, red = hotter than ambient,
-// +/-COLOR_RANGE_C maps to full saturation. Returns an [r, g, b] triple
-// (rather than a CSS color string) since the caller writes it straight into
-// an ImageData buffer once per grid cell every frame. Pure function (no
-// canvas/DOM), so it's testable headlessly like the rest of this module.
+function clamp1(x) {
+  return Math.max(-1, Math.min(1, x));
+}
+
+const WHITE = [255, 255, 255];
+const RED = [255, 68, 68];
+const BLUE = [56, 189, 248];
+
+function mix(from, to, t) {
+  return [Math.round(lerp(from[0], to[0], t)), Math.round(lerp(from[1], to[1], t)), Math.round(lerp(from[2], to[2], t))];
+}
+
+const AMBIENT_TEMPERATURE_MID_C = (AMBIENT_TEMPERATURE_MIN + AMBIENT_TEMPERATURE_MAX) / 2;
+const AMBIENT_TEMPERATURE_HALF_RANGE_C = (AMBIENT_TEMPERATURE_MAX - AMBIENT_TEMPERATURE_MIN) / 2;
+
+// The room's own base color: white at the midpoint of the Ambient
+// Temperature slider's range, tinting toward blue as ambient drops to
+// AMBIENT_TEMPERATURE_MIN and toward red as it rises to
+// AMBIENT_TEMPERATURE_MAX -- so the slider visibly colors the whole room
+// even where nothing is hotter or colder than ambient.
+function ambientBaseColor(ambientTemperature) {
+  const fraction = clamp1((ambientTemperature - AMBIENT_TEMPERATURE_MID_C) / AMBIENT_TEMPERATURE_HALF_RANGE_C);
+  return fraction >= 0 ? mix(WHITE, RED, fraction) : mix(WHITE, BLUE, -fraction);
+}
+
+// A cell's color starts from the room's own ambient-tinted base color (see
+// ambientBaseColor above) and mixes toward full red/blue the further the
+// cell's own temperature sits above/below ambient, saturating at
+// +/-COLOR_RANGE_C. Returns an [r, g, b] triple (rather than a CSS color
+// string) since the caller writes it straight into an ImageData buffer once
+// per grid cell every frame. Pure function (no canvas/DOM), so it's testable
+// headlessly like the rest of this module.
 export function temperatureToColor(temperature, ambientTemperature = config.ambientTemperature) {
-  const t = Math.max(-1, Math.min(1, (temperature - ambientTemperature) / COLOR_RANGE_C));
-  if (t >= 0) {
-    return [255, Math.round(lerp(255, 68, t)), Math.round(lerp(255, 68, t))];
-  }
-  const s = -t;
-  return [Math.round(lerp(255, 56, s)), Math.round(lerp(255, 189, s)), Math.round(lerp(255, 248, s))];
+  const base = ambientBaseColor(ambientTemperature);
+  const t = clamp1((temperature - ambientTemperature) / COLOR_RANGE_C);
+  return t >= 0 ? mix(base, RED, t) : mix(base, BLUE, -t);
 }
