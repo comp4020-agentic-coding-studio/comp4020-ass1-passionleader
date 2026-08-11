@@ -185,35 +185,19 @@ describe("source/wall CRUD in meters", () => {
 });
 
 describe("temperatureToColor", () => {
-  const AMBIENT_MID = (simulation.AMBIENT_TEMPERATURE_MIN + simulation.AMBIENT_TEMPERATURE_MAX) / 2;
+  it("is neutral white at ambient, warms toward red above it, cools toward blue below it", () => {
+    expect(simulation.temperatureToColor(20, 20)).toEqual([255, 255, 255]);
 
-  it("is neutral white at an ambient-only room when ambient sits at the slider's midpoint", () => {
-    expect(simulation.temperatureToColor(AMBIENT_MID, AMBIENT_MID)).toEqual([255, 255, 255]);
-  });
-
-  it("tints an ambient-only room blue at the slider's coldest setting and red at its hottest", () => {
-    const coldRoom = simulation.temperatureToColor(simulation.AMBIENT_TEMPERATURE_MIN, simulation.AMBIENT_TEMPERATURE_MIN);
-    expect(coldRoom).toEqual([56, 189, 248]);
-
-    const hotRoom = simulation.temperatureToColor(simulation.AMBIENT_TEMPERATURE_MAX, simulation.AMBIENT_TEMPERATURE_MAX);
-    expect(hotRoom).toEqual([255, 68, 68]);
-  });
-
-  it("still warms toward red above ambient and cools toward blue below it, regardless of the room's own base tint", () => {
-    const hot = simulation.temperatureToColor(AMBIENT_MID + 35, AMBIENT_MID);
+    const hot = simulation.temperatureToColor(20 + 35, 20);
     expect(hot).toEqual([255, 68, 68]);
 
-    const cold = simulation.temperatureToColor(AMBIENT_MID - 35, AMBIENT_MID);
+    const cold = simulation.temperatureToColor(20 - 35, 20);
     expect(cold).toEqual([56, 189, 248]);
   });
 
   it("clamps beyond +/- the color range instead of extrapolating", () => {
-    expect(simulation.temperatureToColor(AMBIENT_MID + 1000, AMBIENT_MID)).toEqual(
-      simulation.temperatureToColor(AMBIENT_MID + 35, AMBIENT_MID),
-    );
-    expect(simulation.temperatureToColor(AMBIENT_MID - 1000, AMBIENT_MID)).toEqual(
-      simulation.temperatureToColor(AMBIENT_MID - 35, AMBIENT_MID),
-    );
+    expect(simulation.temperatureToColor(20 + 1000, 20)).toEqual(simulation.temperatureToColor(20 + 35, 20));
+    expect(simulation.temperatureToColor(20 - 1000, 20)).toEqual(simulation.temperatureToColor(20 - 35, 20));
   });
 });
 
