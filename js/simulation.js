@@ -191,6 +191,7 @@ export function reset() {
   grid.u.fill(0);
   grid.v.fill(0);
   grid.t.fill(config.ambientTemperature);
+  ambientBuoyancyReference = config.ambientTemperature;
 }
 
 // Named starting scenes, applied against the grid's own physical domain size
@@ -334,14 +335,41 @@ function addSourcesHeat(dt) {
 // near itself.
 const AMBIENT_RELAXATION_RATE = 1.2;
 
+// A single scalar that lags config.ambientTemperature at the exact same rate
+// every cell's own temperature does (reset alongside grid.t in reset()). The
+// gap between the live slider value and this lagging reference is positive
+// exactly while the room is being heated and negative while it's being
+// cooled, which addAmbientRelaxation below turns into a whole-room buoyant
+// push -- see the comment there for why that can't just reuse each cell's
+// own (t - ambient).
+let ambientBuoyancyReference = config.ambientTemperature;
+
+// Dragging the Ambient Temperature slider up should read as "heating the
+// room" (air rising) and dragging it down as "cooling the room" (air
+// sinking) -- but driving that from each cell's own (t - ambient), the way
+// addBuoyancy does for real sources, gets it backwards here: a cell that
+// hasn't yet warmed up to a freshly-raised ambient is *momentarily colder*
+// than its new surroundings, so the standard Boussinesq sign would sink it,
+// exactly opposite of what turning the dial to "hot" should look like.
+// Comparing the live target against ambientBuoyancyReference instead (a
+// single lagging scalar, not per-cell) gives the correct, intuitive
+// direction, and -- because every cell gets the same uniform push regardless
+// of its own temperature -- it never fights or reverses a real source's own,
+// much larger, correctly-signed local buoyancy.
 function addAmbientRelaxation(dt) {
-  const { nx, ny, t, solid } = grid;
+  const { nx, ny, t, v, solid } = grid;
   const ambient = config.ambientTemperature;
+  const g = PHYSICAL_CONSTANTS.gravity;
+  const beta = 1 / (ambient + 273.15);
+  const warmingDelta = ambient - ambientBuoyancyReference;
+  ambientBuoyancyReference += warmingDelta * AMBIENT_RELAXATION_RATE * dt;
+
   for (let j = 1; j <= ny; j++) {
     for (let i = 1; i <= nx; i++) {
       const idx = index(nx, i, j);
       if (solid[idx]) continue;
       t[idx] += (ambient - t[idx]) * AMBIENT_RELAXATION_RATE * dt;
+      v[idx] -= g * beta * warmingDelta * dt;
     }
   }
 }
