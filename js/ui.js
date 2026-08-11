@@ -123,7 +123,7 @@ function slider({ id, label, min, max, step: stepSize = 1, value, unit = "" }) {
         <span>${label}</span>
         <span id="${id}-value" class="font-mono text-slate-400">${value}${unit}</span>
       </span>
-      <input type="range" id="${id}" min="${min}" max="${max}" step="${stepSize}" value="${value}" class="accent-sky-600" />
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${stepSize}" value="${value}" class="accent-orange-600" />
     </label>
   `;
 }
@@ -208,7 +208,7 @@ export function mountControls(panel) {
     <a href="./physics.html" class="flex min-h-11 items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500">
       How this works
     </a>
-    <a href="https://www.buymeacoffee.com/sskim" target="_blank" rel="noopener" id="buy-me-a-coffee-button" class="flex min-h-11 items-center justify-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-yellow-400">
+    <a href="https://buymeacoffee.com/sskim" target="_blank" rel="noopener" id="buy-me-a-coffee-button" class="flex min-h-11 items-center justify-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-yellow-400">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
         <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
         <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
