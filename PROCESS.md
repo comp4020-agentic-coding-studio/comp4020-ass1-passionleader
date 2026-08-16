@@ -2,52 +2,59 @@
 
 I built an interactive weather and atmosphere simulator that lets users explore
 temperature, pressure, wind, clouds, and terrain through a layered Canvas
-visualisation. The final idea grew out of an earlier thermal-convection
-prototype. My process was shaped by a repeated question: did the simulation
-merely look plausible, or did its behaviour make physical and interactive sense?
+visualisation. It grew out of an earlier thermal-convection prototype that I
+deliberately set aside once a better idea was working. My process was shaped
+by one repeated question: did the simulation merely look plausible, or did its
+behaviour make physical and interactive sense?
 
 ## The moments that mattered
 
-At the beginning, I made the main product and technical decisions before asking
-the agent to implement them. I chose vanilla JavaScript, HTML5 Canvas, and
-Tailwind CSS, and specified the initial module boundaries, responsive layout,
-controls, and interaction model. I used Gemini to help turn these decisions
-into the first `CLAUDE.md`, which gave Claude a shared vocabulary and explicit
-constraints instead of leaving the project as an open-ended visual experiment.
-The first harness and the initial simulation direction are visible in
-[`f0e7eeb`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/f0e7eeb)
-and [`e3a5220`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/e3a5220).
+**Architecture before implementation.** Before asking Claude to write anything,
+I picked vanilla JavaScript, HTML5 Canvas, and Tailwind CSS over a framework,
+and specified a three-module boundary (`simulation.js` -> `ui.js` -> `app.js`)
+so the physics could be tested without a browser. Instead of trusting that the
+boundary would hold once Claude started iterating, I had it write
+`spec/simulation.test.ts` in the same commit as the physics engine itself,
+asserting that a lone heat source produces two symmetric circulation cells
+rather than one lopsided loop. That test passing headlessly — not the canvas
+merely looking right — is what told me the module boundary was real, not just
+documented
+([`f0e7eeb`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/f0e7eeb),
+[`e3a5220`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/e3a5220)).
 
-The first decisive breakthrough was recognising that the convection prototype
-was not engaging enough, even after several rounds of tuning. I tested it by
-watching the rendered flow, not just by reading the code: heat rose and cold
-sank, but circulation was difficult to see and the experience felt too narrow.
-I had also learned from the debugging that a visual change could accidentally
-alter the physics. For example, changing a slider maximum changed an internal
-normalisation value and made the flow too strong. Rather than continuing to
-patch an uninteresting concept, I changed the problem: I asked Claude, with
-`effort: max`, to build a weather simulator with visible heat, pressure, wind,
-clouds, and a map-like terrain layer. This was a deliberate delegation after I
-defined the experience I wanted, not a request for arbitrary feature growth.
+**The convection prototype stopped being interesting.** After several rounds of
+tuning — buoyancy, wall collisions, circulation pairing, a full particle-to-grid
+CFD rewrite — heat rose and cold sank correctly, but the experience still felt
+narrow: I could confirm the physics by watching the render, yet there wasn't
+much left to explore. Rather than keep patching a concept I'd already
+validated, I changed the problem: with `effort: max`, I asked Claude to build a
+weather simulator with coupled temperature/pressure fields, Coriolis rotation,
+wind trails, clouds, isobars, and terrain, plus a headless test for each new
+claim (source behaviour, pressure extrema, hemisphere-dependent rotation,
+numerical stability at a risky slider corner). I verified it the way I'd
+verified the convection sim — reading the rendered flow at both viewports, not
+just the diff — before treating it as more than a demo
+([`6696eb9`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/6696eb95100c05fac66d910a86a9802fbd191981)).
 
-The resulting implementation became a separate weather architecture. It added
-an atmosphere grid, coupled temperature and pressure fields, Coriolis rotation,
-wind streamlines with fading trails, procedural terrain, cloud coverage,
-isobars, high/low pressure markers, a weather control panel, and a physics
-explanation page. It also added tests for source behaviour, pressure extrema,
-numerical stability at a risky slider corner, ambient temperature, the textbook
-Coriolis formula, hemisphere-dependent rotation direction, colour mapping, and
-responsive grid resolution. The transition to the final weather simulator is
-recorded in [`6696eb9`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/6696eb95100c05fac66d910a86a9802fbd191981).
+**Rolling back an overreaching fix.** An ambient-temperature bug — the slider's
+hot/cold direction was inverted — came back from a first fix having grown into
+a bigger rewrite than the bug needed, a change I hadn't asked for. Rather than
+layer another prompt on top of it, I rolled the change back and re-specified
+the exact behaviour I wanted at each slider extreme (leftmost = -10°C blue
+room, rightmost = 40°C red room). That respecification is what actually
+surfaced the real remaining bug: airflow rose when it should have sunk. I
+confirmed the corrected version by dragging the slider to both extremes and
+checking the airflow direction matched, not by reading the new diff and
+assuming it was fine
+([`e7817be...2cff3bf`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/compare/e7817be...2cff3bf)).
 
-Another important strategy was making changes reversible and narrow. When an
-ambient-temperature fix changed more than intended, I explicitly rolled it
-back, reconsidered the requirement, and later corrected the airflow direction
-with a focused change ([`e7817be...2cff3bf`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/compare/e7817be...2cff3bf)). This taught me to constrain Claude's edits rather than repeatedly restating the same request.
-
-The final `CLAUDE.md` now reflects the weather simulator rather than the
-superseded convection app. It documents the weather module boundaries, physical
-units, rendering responsibilities, numerical invariants, tests, and the rule
-that the explanation page must stay consistent with the solver. In this way,
-the harness records not only how Claude should code, but also what I decided
-the project was actually trying to teach.
+**Owning that this started outside the graded scope.** The commit that
+introduced the weather simulator says, in its own message, that it was "kept
+out of the graded convection simulator entirely" — at the time I was treating
+it as a side experiment, not a submission candidate. Once it turned out to be
+the stronger result, I didn't quietly rewrite that history: I decided
+explicitly that it should become the actual deliverable, rewrote `CLAUDE.md` to
+say so, tagged the old convection state as `convection-simulator` so it stays
+reachable, and only fast-forwarded `main` onto the weather branch once
+`pnpm check` and `pnpm check:evidence` were green on it
+([`b237438...9a6cdfe`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/compare/b237438...9a6cdfe)).
