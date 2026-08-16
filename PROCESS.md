@@ -1,83 +1,53 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-A reading-guide to how the work came together --- a map to your process, not an
-essay about it. Markers read this file and follow its citations; they don't
-trawl the repo for evidence you didn't point at, so if a moment mattered, cite
-it.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and each brief adds its own word count and moment count.
-
-## What I built
-
-One paragraph: the thing, and the idea behind it.
+I built an interactive weather and atmosphere simulator that lets users explore
+temperature, pressure, wind, clouds, and terrain through a layered Canvas
+visualisation. The final idea grew out of an earlier thermal-convection
+prototype. My process was shaped by a repeated question: did the simulation
+merely look plausible, or did its behaviour make physical and interactive sense?
 
 ## The moments that mattered
 
-Three or four for an assignment; fewer is fine for a weekly prototype. Keep the
-list short so each moment has room to do all four jobs:
+At the beginning, I made the main product and technical decisions before asking
+the agent to implement them. I chose vanilla JavaScript, HTML5 Canvas, and
+Tailwind CSS, and specified the initial module boundaries, responsive layout,
+controls, and interaction model. I used Gemini to help turn these decisions
+into the first `CLAUDE.md`, which gave Claude a shared vocabulary and explicit
+constraints instead of leaving the project as an open-ended visual experiment.
+The first harness and the initial simulation direction are visible in
+[`f0e7eeb`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/f0e7eeb)
+and [`e3a5220`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/e3a5220).
 
-1. **what happened** --- the problem, or the thing the agent got wrong
-2. **what you did instead of the obvious thing** --- the call you made, and why
-   it beat the obvious one
-3. **how you knew it was right** --- the check you ran, the viewport you looked
-   at, what you read before accepting the diff
-4. **the citation** --- a commit or commit range, a `CLAUDE.md` change, a check
-   that went from red to green, a prompt paired with the commit it produced
+The first decisive breakthrough was recognising that the convection prototype
+was not engaging enough, even after several rounds of tuning. I tested it by
+watching the rendered flow, not just by reading the code: heat rose and cold
+sank, but circulation was difficult to see and the experience felt too narrow.
+I had also learned from the debugging that a visual change could accidentally
+alter the physics. For example, changing a slider maximum changed an internal
+normalisation value and made the flow too strong. Rather than continuing to
+patch an uninteresting concept, I changed the problem: I asked Claude, with
+`effort: max`, to build a weather simulator with visible heat, pressure, wind,
+clouds, and a map-like terrain layer. This was a deliberate delegation after I
+defined the experience I wanted, not a request for arbitrary feature growth.
 
-Jobs 2 and 3 are the ones the repo can't tell a reader on its own, so they're
-where the marks are. The strongest moments are the ones where a correction
-landed in the **harness** rather than in another prompt --- a rule added to
-`CLAUDE.md`, a check wired up, an attempt thrown away: re-prompting until it
-passes is the routine case, and changing what the agent works against is the
-skilled one.
+The resulting implementation became a separate weather architecture. It added
+an atmosphere grid, coupled temperature and pressure fields, Coriolis rotation,
+wind streamlines with fading trails, procedural terrain, cloud coverage,
+isobars, high/low pressure markers, a weather control panel, and a physics
+explanation page. It also added tests for source behaviour, pressure extrema,
+numerical stability at a risky slider corner, ambient temperature, the textbook
+Coriolis formula, hemisphere-dependent rotation direction, colour mapping, and
+responsive grid resolution. The transition to the final weather simulator is
+recorded in [`6696eb9`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/commit/6696eb95100c05fac66d910a86a9802fbd191981).
 
-Cite each moment as a link whose text is the commit hash or range and whose
-target is this repo's commit or compare URL, so a reader clicks straight to the
-evidence:
+Another important strategy was making changes reversible and narrow. When an
+ambient-temperature fix changed more than intended, I explicitly rolled it
+back, reconsidered the requirement, and later corrected the airflow direction
+with a focused change ([`e7817be...2cff3bf`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-passionleader/compare/e7817be...2cff3bf)). This taught me to constrain Claude's edits rather than repeatedly restating the same request.
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
-
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
-
-> the prompt, verbatim
-
-Screenshots are welcome where one carries the verification better than a
-sentence does. Commit the file to this repo and link it with a **relative**
-path, which is what makes it render on GitHub: `![alt text](docs/before.png)`.
-Images don't count towards the word count and don't replace the citation.
-
-### A worked moment, for shape
-
-Delete this section along with the rest of the boilerplate --- it's here to show
-the four jobs in one paragraph, not to be imitated in content.
-
-> The date formatter kept coming back with `toLocaleDateString()` and no locale
-> argument, so the same build rendered differently on my machine and in CI. I'd
-> already re-prompted it twice, which fixed the line but not the habit, so the
-> third time I put the rule in `CLAUDE.md` instead
-> ([`3f9ac21`](https://github.com/YOUR-ORG/YOUR-REPO/commit/3f9ac21)) and added
-> a spec test that fails on a bare `toLocaleDateString`. That's what told me it
-> had actually taken: the test went red against the old code and green against
-> the new, and the next two features it wrote passed it without prompting
-> ([`3f9ac21...b7e0d14`](https://github.com/YOUR-ORG/YOUR-REPO/compare/3f9ac21...b7e0d14)).
-
-## Before you ship
-
-`pnpm check:evidence` verifies your citations resolve to real commits, that the
-current reflection entry is in `reflections/`, and that your `CLAUDE.md` is
-there --- before a marker ever opens the file. It checks that your map is
-traceable, not that it is good: the marker judges whether your small,
-deliberately chosen set of moments shows real judgement and reflection. A green
-check is not a substitute for that curation.
-
-Images are deliberately not checked, because whether one renders is visible the
-moment you look. Open this file on GitHub and look at it before you ship.
+The final `CLAUDE.md` now reflects the weather simulator rather than the
+superseded convection app. It documents the weather module boundaries, physical
+units, rendering responsibilities, numerical invariants, tests, and the rule
+that the explanation page must stay consistent with the solver. In this way,
+the harness records not only how Claude should code, but also what I decided
+the project was actually trying to teach.
