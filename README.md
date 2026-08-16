@@ -1,64 +1,36 @@
-# COMP4020 static prototype template
+# Weather & Atmosphere Simulator
 
-A starter template for static-site prototypes in **COMP4020 / COMP8020 Agentic
-Coding Studio**. The course provisions a repo from this template for each
-deliverable --- you don't create it yourself. The `start` course skill clones it
-for you; from there, build your prototype and deploy it to GitHub Pages.
+**COMP4020 Assignment 1** --- an interactive explainer for how weather forms:
+place warm/cool zones and high/low-pressure systems, change latitude and
+physical parameters, and toggle temperature, pressure, cloud, and wind layers
+over a coupled atmosphere driven by a real grid-based CFD solver (Coriolis
+rotation included).
 
-## CI and Pages only turn on when you ship
+**Live:** https://comp4020-agentic-coding-studio.github.io/comp4020-ass1-passionleader/
+**Explainer:** [`weather-physics.html`](https://comp4020-agentic-coding-studio.github.io/comp4020-ass1-passionleader/weather-physics.html)
+walks through the equations and implementation choices.
 
-Your repo starts private, and both CI jobs (`check` and `deploy`) are gated on
-it being public. While private, a push to `main` runs nothing in CI ---
-`pnpm check` (below) is your feedback loop until then. When you're ready, the
-course's `/ship` skill flips the repo public, turns on GitHub Pages, and
-dispatches the deploy for you; there's nothing to configure in the Pages
-settings yourself. From that point, every push to `main` builds and deploys, and
-the deploy step prints your live URL and checks it returns 200.
+An earlier thermal-convection prototype (single heat/cold sources driving a
+convection cell) is still reachable at
+[`convection.html`](https://comp4020-agentic-coding-studio.github.io/comp4020-ass1-passionleader/convection.html)
+--- it's what the weather simulator grew out of, but it is not the graded
+deliverable.
 
-## What gets marked
+See [`PROCESS.md`](./PROCESS.md) for how the work came together and
+[`reflections/assignment-1.md`](./reflections/assignment-1.md) for the retro.
 
-The deployed site is the deliverable, assessed live in Chrome at two fixed
-viewports --- see the course website's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#marking-environment)
-for the details.
+## Stack
 
-## Quick start
+Vanilla JavaScript ES modules, HTML5 Canvas 2D, and Tailwind CSS via CDN --- no
+framework, no runtime npm dependency. Vite is only the course's static
+build/dev pipeline; see `CLAUDE.md` for the module architecture.
+
+## Local development
 
 ```sh
-mise install       # supported path: install the template's Node and pnpm
+mise install    # installs the tested Node and pnpm versions
 pnpm install
 pnpm dev        # local dev server
-pnpm check      # most of what CI runs (links, secrets, evidence and deploy are CI-only)
+pnpm check      # typecheck, build, lint, and the spec suite
 pnpm build      # produce dist/ (what gets deployed)
-pnpm dlx linkinator ./dist --silent   # reproduce CI's links check before you push
 ```
-
-`mise` is the course's recommended runtime manager. If you use another manager
-or the official installers, that is fine: provide the Node and pnpm versions in
-`mise.toml`, then run the same commands. Tutor support reproduces runtime
-problems with mise.
-
-## What's here
-
-- `index.html`, `styles.css`, `main.ts` --- a minimal starting site. Replace it.
-- `mise.toml` --- the tested Node and pnpm versions for this template.
-- `spec/` --- what the checks are for (`README.md`), the shipped invariants
-  (`invariants.test.ts`), and a replaceable starter test (`starter.test.ts`);
-  your own spec tests live alongside them.
-- `CLAUDE.md` --- orients your coding agent: what the checks mean and how to
-  work here. Yours to grow.
-- `PROCESS.md` --- a template for your process overview, showing the
-  cited-moment format. Replace it with your own; `pnpm check:evidence` verifies
-  your citations resolve.
-- `.github/workflows/checks.yml` --- the CI sensors that run on every push once
-  your repo is public, and the GitHub Pages deploy.
-- `.githooks/pre-commit` --- blocks any commit that contains something shaped
-  like an API key, so your COMP4020 key can't end up in a public repo. Installed
-  automatically by `pnpm install`.
-
-This template is SSG-agnostic: it's plain HTML/CSS/TypeScript on Vite, so you
-can add Astro, Eleventy, or any static generator later without changing how it
-deploys. TypeScript is the course default over plain JavaScript: the types are
-extra backpressure, and your agent feels it before you do.
-
-See the course site for how the checks map to each week of the course.

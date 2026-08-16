@@ -1,11 +1,16 @@
 # Weather & Atmosphere Simulator (COMP4020 Assignment 1)
 
 This repository's final deliverable is the **Weather & Atmosphere Simulator**,
-not the earlier thermal-convection prototype. The primary page is
-`weather.html`; `weather-physics.html` explains the equations and implementation
-choices. The experience lets a user explore a coupled atmosphere by placing
-warm/cool zones and high/low-pressure systems, changing latitude and physical
-parameters, and toggling temperature, pressure, cloud, and wind layers.
+not the earlier thermal-convection prototype. The primary page is `index.html`
+(so it's what loads at the deployed root); `weather-physics.html` explains the
+equations and implementation choices. The experience lets a user explore a
+coupled atmosphere by placing warm/cool zones and high/low-pressure systems,
+changing latitude and physical parameters, and toggling temperature, pressure,
+cloud, and wind layers.
+
+The earlier thermal-convection prototype still lives in this repo at
+`convection.html` (paired with `physics.html`) so it stays reachable, but it is
+not the deliverable and should not be linked from `index.html`.
 
 The project is an interactive explainer, not a production weather forecast. It
 should be physically motivated, numerically stable, visually legible, and
@@ -19,8 +24,9 @@ that satisfies the request.
 - Do not add a framework, runtime npm dependency, bundler-only import, or
   TypeScript to the shipped application. Vite is only the course's static
   build/dev pipeline.
-- `weather.html` owns document structure, the canvas, the responsive controls
-  container, the status bar, and external widget/script markup.
+- `index.html` (the former `weather.html`) owns document structure, the
+  canvas, the responsive controls container, the status bar, and external
+  widget/script markup.
 - `js/weather-app.js` is the browser entry point. It owns canvas resizing,
   pointer-to-meter conversion, the animation loop, and all drawing: terrain,
   graticule, temperature heatmap, clouds, isobars, pressure extrema, sources,

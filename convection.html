@@ -1,10 +1,9 @@
 <!doctype html>
-<!-- Seongsu Kim · u8321477@anu.edu.au -->
 <html lang="en-AU">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather &amp; Atmosphere Simulator</title>
+    <title>Thermal Convection &amp; Airflow Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,7 +12,7 @@
       rel="stylesheet"
     />
     <!-- Tailwind's default theme has no "Outfit" font family and no
-    dark-teal palette, so a small inline style block covers what its
+    warm-black palette, so a small inline style block covers what its
     utilities genuinely can't express (see CLAUDE.md). -->
     <style>
       body {
@@ -26,23 +25,23 @@
     </style>
   </head>
   <body class="flex h-screen flex-col overflow-hidden bg-black text-slate-100">
-    <header class="relative z-40 border-b border-[#1e3a4a] bg-black">
+    <header class="relative z-40 border-b border-[#3a2a20] bg-black">
       <nav
         aria-label="Primary"
         class="flex items-center justify-between gap-3 px-4 py-3"
       >
         <span class="flex min-w-0 flex-col truncate">
           <span class="truncate text-sm font-semibold tracking-wide text-slate-300">
-            Weather &amp; Atmosphere Simulator
+            Thermal Convection &amp; Airflow Simulator
           </span>
-          <span class="truncate text-[11px] text-slate-500">u8321477@anu.edu.au Seongsu Kim</span>
+          <span class="truncate text-[11px] text-slate-500">u8321477@anu.edu.au</span>
         </span>
         <div class="flex shrink-0 items-center gap-2">
           <button
             id="fullscreen-toggle"
             type="button"
             aria-pressed="false"
-            class="rounded border border-[#1e3a4a] bg-[#152530] px-3 py-1.5 text-sm font-medium hover:bg-[#1c3140]"
+            class="rounded border border-[#3a2a20] bg-[#241a15] px-3 py-1.5 text-sm font-medium hover:bg-[#2f2119]"
           >
             Fullscreen
           </button>
@@ -51,7 +50,7 @@
             type="button"
             aria-expanded="true"
             aria-controls="controls"
-            class="rounded border border-[#1e3a4a] bg-[#152530] px-3 py-1.5 text-sm font-medium hover:bg-[#1c3140]"
+            class="rounded border border-[#3a2a20] bg-[#241a15] px-3 py-1.5 text-sm font-medium hover:bg-[#2f2119]"
           >
             Controls
           </button>
@@ -62,14 +61,14 @@
     <!-- The one real heading the invariants require; the header above already
     carries the visible title, so this stays off-screen rather than doubling
     it. -->
-    <h1 class="sr-only">Weather &amp; Atmosphere Simulator</h1>
+    <h1 class="sr-only">Thermal Convection &amp; Airflow Simulator</h1>
 
     <main class="relative flex flex-1 overflow-hidden bg-black">
       <div class="relative flex min-w-0 flex-1 flex-col">
         <canvas
-          id="weather-canvas"
+          id="simulation-canvas"
           class="min-h-0 min-w-0 flex-1 touch-none bg-black"
-          aria-label="Weather simulation map"
+          aria-label="Thermal convection simulation canvas"
         ></canvas>
 
         <div
@@ -77,9 +76,9 @@
           class="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-4 bg-black/70 px-3 py-1.5 font-mono text-xs text-slate-300 backdrop-blur"
         >
           <span>FPS: <span id="fps-value">--</span></span>
-          <span>Min P: <span id="min-pressure-value">--</span> hPa</span>
-          <span>Max P: <span id="max-pressure-value">--</span> hPa</span>
-          <span class="hidden sm:inline">f: <span id="coriolis-value">--</span> ×10⁻⁴/s</span>
+          <span>Tracers: <span id="tracer-count-value">--</span></span>
+          <span class="hidden sm:inline">Ra: <span id="rayleigh-value">--</span></span>
+          <span class="hidden sm:inline">Regime: <span id="flow-regime-value">--</span></span>
         </div>
       </div>
 
@@ -93,15 +92,15 @@
       <aside
         id="controls"
         aria-label="Simulation controls"
-        class="fixed inset-x-0 bottom-0 z-30 flex max-h-[70vh] flex-col gap-4 overflow-y-auto rounded-t-2xl border-t border-[#1e3a4a] bg-[#0f1e26] p-4 shadow-xl transition-all duration-200 ease-out md:static md:inset-auto md:z-auto md:max-h-none md:shrink-0 md:overflow-y-auto md:rounded-lg md:shadow-none"
+        class="fixed inset-x-0 bottom-0 z-30 flex max-h-[70vh] flex-col gap-4 overflow-y-auto rounded-t-2xl border-t border-[#3a2a20] bg-[#1c1512] p-4 shadow-xl transition-all duration-200 ease-out md:static md:inset-auto md:z-auto md:max-h-none md:shrink-0 md:overflow-y-auto md:rounded-lg md:shadow-none"
       >
-        <!-- js/weather-ui.js populates this panel: tool selector, sliders,
-        layer toggles, presets, and action buttons. Kept empty here so
-        weather-ui.js is the single source of truth for control markup. -->
+        <!-- js/ui.js populates this panel: tool selector, sliders, and
+        action buttons. Kept empty here so ui.js is the single source of
+        truth for control markup. -->
       </aside>
     </main>
 
-    <script type="module" src="./js/weather-app.js"></script>
+    <script type="module" src="./js/app.js"></script>
     <script
       data-name="BMC-Widget"
       data-cfasync="false"
